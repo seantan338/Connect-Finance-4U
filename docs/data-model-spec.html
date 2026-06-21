@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Model Spec — Ledger Project</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14213D; --paper:#FBFAF8; --panel:#FFFFFF;
+    --credit:#1B7F5B; --credit-bg:#E7F2EC;
+    --debit:#9E2A3B; --debit-bg:#F6E9EB;
+    --gold:#B8901F; --gold-bg:#F7EFD8;
+    --line:#E4DFD4; --muted:#6B7280; --muted2:#9AA0A6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px}
+  header{background:var(--ink);color:#F3EFE6;padding:54px 0 46px;position:relative;overflow:hidden}
+  header::after{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(184,144,31,.07) 31px,rgba(184,144,31,.07) 32px);pointer-events:none}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+  h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(32px,5vw,50px);line-height:1.03;letter-spacing:-.02em}
+  .sub{margin-top:16px;max-width:62ch;font-size:16px;color:#C9CBD1}
+  section{padding:46px 0;border-bottom:1px solid var(--line)}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:16px}
+  .sec-num{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--gold);font-weight:600}
+  h2{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:26px;letter-spacing:-.01em}
+  h3{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:18px;margin:24px 0 8px}
+  p{margin-bottom:14px;font-size:15.5px}
+  .lead{font-size:17px;color:var(--ink)}
+  code{font-family:'IBM Plex Mono',monospace;font-size:13px;background:var(--gold-bg);padding:2px 6px;border-radius:3px;color:#7A5E10}
+  strong{font-weight:600}
+  .callout{background:var(--debit-bg);border-left:4px solid var(--debit);padding:18px 20px;border-radius:0 6px 6px 0;margin:20px 0}
+  .callout.ok{background:var(--credit-bg);border-left-color:var(--credit)}
+  .callout .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--debit);display:block;margin-bottom:6px}
+  .callout.ok .tag{color:var(--credit)}
+
+  /* SPLIT DIAGRAM */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+  .layer{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel)}
+  .layer .lh{padding:14px 18px;font-family:'Space Grotesk',sans-serif;font-weight:600;color:#fff;font-size:15px}
+  .layer.pg .lh{background:var(--ink)} .layer.fb .lh{background:var(--gold);color:#1a1304}
+  .layer ul{list-style:none;padding:14px 18px}
+  .layer li{font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:5px 0;border-bottom:1px dashed var(--line);color:var(--ink)}
+  .layer li:last-child{border-bottom:none}
+  .layer li::before{content:"▸ ";color:var(--gold)}
+  .layer.fb li::before{color:var(--ink)}
+
+  /* ER */
+  .er{background:var(--ink);color:#D7DAE0;border-radius:8px;padding:26px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.7;overflow-x:auto;margin:20px 0}
+  .er .e{color:#7FD3AC;font-weight:600}
+  .er .k{color:var(--gold)}
+  .er .c{color:#8A93A0}
+  .er .rel{color:#E59AA6}
+
+  /* ENTITY CARDS */
+  .ent{border:1px solid var(--line);border-radius:6px;margin:12px 0;overflow:hidden;background:var(--panel)}
+  .ent summary{padding:14px 18px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;display:flex;align-items:center;gap:10px;list-style:none}
+  .ent summary::-webkit-details-marker{display:none}
+  .ent summary::before{content:"+";font-family:'IBM Plex Mono',monospace;color:var(--gold);font-size:18px;font-weight:700}
+  .ent[open] summary::before{content:"–"}
+  .ent .body{padding:0 18px 16px;font-size:14px;color:var(--muted)}
+  .ent .mono{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold);background:var(--gold-bg);padding:2px 7px;border-radius:3px;margin-left:auto}
+  .ent code{font-size:12px}
+  .p0{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--ink);color:#fff;padding:2px 6px;border-radius:3px}
+
+  footer{background:var(--ink);color:#9AA0A6;padding:28px 0;font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:center}
+  footer span{color:var(--gold)}
+  @media(max-width:680px){.split{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Phase 0 · Foundation · v0.1</div>
+    <h1>Data Model Spec</h1>
+    <p class="sub">复式记账内核的数据模型与架构决策。这份文档的核心论点只有一句:<strong style="color:#fff">financial truth 必须落在 ACID 的关系型数据库,不能放 Firestore。</strong>配套 <code style="background:rgba(255,255,255,.12);color:#F7EFD8">schema.sql</code> 可直接执行。</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">01</span><h2>关键架构决策:为什么不是纯 Firebase</h2></div>
+    <p class="lead">你的默认 stack 是 React + Vite + TS + Tailwind + Firebase。前端、auth、实时协作继续用 Firebase——但<strong>总账(ledger)必须用 Postgres</strong>。</p>
+    <div class="callout">
+      <span class="tag">Debit · 痛点</span>
+      会计要求强一致性事务、复杂多表 join(科目层级、期间汇总、跨实体合并)、以及「每张凭证借贷必须相等」这种硬不变式。Firestore 是文档型、最终一致、无原生 join、无事务级跨文档约束——这几样全是它的弱项。把 ledger 放 Firestore = 迟早对不上账。
+    </div>
+    <div class="callout ok">
+      <span class="tag">Credit · 决策</span>
+      <strong>Postgres 管 financial truth,Firebase 管体验层。</strong>你做 CV pipeline 时已经选了 Zeabur PostgreSQL + pgvector,基础设施现成,零额外成本。
+    </div>
+
+    <div class="split">
+      <div class="layer pg">
+        <div class="lh">PostgreSQL — Financial Truth</div>
+        <ul>
+          <li>journal_entries / journal_lines</li>
+          <li>accounts(CoA)</li>
+          <li>invoices / einvoice_submissions</li>
+          <li>payments / allocations</li>
+          <li>audit_log(append-only)</li>
+          <li>合并报表 / trial balance</li>
+        </ul>
+      </div>
+      <div class="layer fb">
+        <div class="lh">Firebase — Experience Layer</div>
+        <ul>
+          <li>Auth(firebase_uid 桥接)</li>
+          <li>实时协作 / presence</li>
+          <li>UI 草稿 / 未提交状态</li>
+          <li>通知 / push</li>
+          <li>文件附件(Storage)</li>
+        </ul>
+      </div>
+    </div>
+    <p>桥接点:<code>app_users.firebase_uid</code>。用户在 Firebase 登录,Postgres 用这个 uid 关联权限和操作。两层各司其职,不重叠。</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">02</span><h2>ER 总览</h2></div>
+    <p>核心是中间那条 <span style="color:var(--debit);font-weight:600">double-entry 主轴</span>:一切财务动作(开票、收付款)最终都过账成 <code>journal_entries</code> + <code>journal_lines</code>,余额永远从分录推导,绝不直接改。</p>
+    <div class="er">
+<span class="e">organizations</span> <span class="c">(multi-entity, parent_org_id 自引用做集团)</span>
+ │  ├─&lt; <span class="e">memberships</span> &gt;─ <span class="e">app_users</span> <span class="c">(RBAC + firebase_uid)</span>
+ │  ├─&lt; <span class="e">accounts</span> <span class="c">(CoA, parent_id 层级)</span>
+ │  ├─&lt; <span class="e">fiscal_periods</span> <span class="c">(open/closed/locked)</span>
+ │  │
+ │  └─&lt; <span class="e">journal_entries</span> <span class="rel">★ 凭证头</span>
+ │         │  <span class="k">不变式: Σdebit = Σcredit (trigger 强制)</span>
+ │         └─&lt; <span class="e">journal_lines</span> <span class="c">(account_id, debit, credit, base_amount)</span>
+ │                      │
+ <span class="c">过账回填 ↑</span>          └─&gt; <span class="e">accounts</span>
+ │
+ ├─&lt; <span class="e">contacts</span> <span class="c">(customer/supplier, tin 必填)</span>
+ │       └─&lt; <span class="e">invoices</span> ─&lt; <span class="e">invoice_lines</span>
+ │                 │
+ │                 ├─&gt; <span class="e">einvoice_submissions</span> <span class="rel">(MyInvois UUID/status)</span>
+ │                 └─&lt; <span class="e">payment_allocations</span> &gt;─ <span class="e">payments</span>
+ │
+ └─&lt; <span class="e">audit_log</span> <span class="c">(append-only, 全实体留痕)</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">03</span><h2>核心实体说明</h2></div>
+    <p>展开看每个实体的职责。完整字段见 <code>schema.sql</code>。</p>
+
+    <details class="ent" open><summary>journal_entries + journal_lines <span class="p0">P0</span><span class="mono">★ 命门</span></summary>
+      <div class="body">
+        复式记账的心脏。<code>entries</code> 是凭证头,<code>lines</code> 是借贷行。每行只能借或贷之一(<code>CHECK NOT (debit&gt;0 AND credit&gt;0)</code>)。<strong style="color:var(--ink)">posted 时由 deferred constraint trigger 强制 Σdebit = Σcredit</strong>——这是整个系统不会算错账的根本保障。这块设计错了,后面全盘重来,所以放 Phase 0 第一优先。
+      </div>
+    </details>
+
+    <details class="ent"><summary>accounts(Chart of Accounts)<span class="p0">P0</span></summary>
+      <div class="body">
+        科目表。<code>account_type</code> 五类(asset/liability/equity/income/expense),<code>normal_balance</code> 标借增还是贷增,<code>parent_id</code> 做层级。支持 MPERS/MFRS 标准模板,onboarding 时一键套用——直接修掉「会计师不熟」那条 con。
+      </div>
+    </details>
+
+    <details class="ent"><summary>invoices + invoice_lines<span class="p0">P0</span></summary>
+      <div class="body">
+        销售/采购共用一张表,<code>direction</code> + <code>doc_type</code> 区分(含 credit_note / debit_note / self_billed)。发票 issue 后过账,生成 journal_entry 并回填 <code>journal_entry_id</code>。发票本身不动余额,余额永远走分录。
+      </div>
+    </details>
+
+    <details class="ent"><summary>einvoice_submissions(MyInvois)<span class="p0">P0</span></summary>
+      <div class="body">
+        e-Invoice 原生内置的落点。记录每次向 LHDN 提交的 <code>payload</code>(55 字段 JSONB)、回传的 <code>myinvois_uuid</code>、<code>status</code>(valid/invalid/cancelled)、<code>validation</code> 结果、QR、数字签名。<code>channel</code> 区分 api 直连还是 peppol。这张表 = 你相对 Xero/QuickBooks 的核心差异化:它们靠插件,你原生。
+      </div>
+    </details>
+
+    <details class="ent"><summary>payments + payment_allocations<span class="p0">P0</span></summary>
+      <div class="body">
+        收付款与核销。一笔款可核销多张发票(allocations 多对多),收款同样过账成 journal_entry。
+      </div>
+    </details>
+
+    <details class="ent"><summary>audit_log<span class="p0">P0</span></summary>
+      <div class="body">
+        append-only 留痕。应用角色只授 <code>INSERT/SELECT</code>,杜绝篡改,满足 PDPA 留存与审计要求。记录 before/after JSONB 快照。
+      </div>
+    </details>
+
+    <details class="ent"><summary>exchange_rates / currencies<span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--credit);color:#fff;padding:2px 6px;border-radius:3px">P1</span></summary>
+      <div class="body">
+        多币种支撑。<code>journal_lines.base_amount</code> 始终存 base currency 折算值,合并报表跨实体汇总时直接用,不必每次重算汇率。Phase 1 启用,服务你的 JB–SG 跨境结构。
+      </div>
+    </details>
+  </div>
+</section>
+
+<section style="border-bottom:none">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">04</span><h2>不变式 · 进 PRD 非功能性需求</h2></div>
+    <div class="callout ok">
+      <span class="tag">Invariants</span>
+      <p style="margin-bottom:8px"><strong>1.</strong> 余额只能由 posted journal_entries 推导,任何模块都不直接写余额。</p>
+      <p style="margin-bottom:8px"><strong>2.</strong> Trial balance(<code>Σdebit − Σcredit</code> group by account)恒为零差。</p>
+      <p style="margin-bottom:8px"><strong>3.</strong> 合并报表 = 跨 org 按 <code>base_amount</code> 汇总,沿 <code>parent_org_id</code> 聚合。</p>
+      <p style="margin-bottom:8px"><strong>4.</strong> period 关账后拒绝该期间凭证增改(应用层 + <code>status='locked'</code>)。</p>
+      <p style="margin-bottom:0"><strong>5.</strong> <code>audit_log</code> 不可篡改,只增不改不删。</p>
+    </div>
+    <p style="margin-top:18px;color:var(--muted)">下一份该出:<strong style="color:var(--ink)">Compliance Spec</strong>(MyInvois 55 字段映射 + SST + MPERS/MFRS 报表)与 <strong style="color:var(--ink)">System Architecture</strong>。两者都从这份 Data Model 派生。</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">LEDGER PROJECT · DATA MODEL SPEC v0.1 · <span>Postgres = truth · Firebase = experience</span></div>
+</footer>
+</body>
+</html>

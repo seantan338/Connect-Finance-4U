@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1782064873312,
+      "tag": "0000_ambiguous_monster_badoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782064899919,
+      "tag": "0001_triggers_roles",
+      "breakpoints": true
+    }
+  ]
+}

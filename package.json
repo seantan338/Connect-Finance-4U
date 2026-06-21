@@ -1,0 +1,23 @@
+{
+  "name": "connect-finance-4u",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Connect Finance 4U — Malaysian SME accounting software (Ledger Project). Postgres = truth, Firebase = experience.",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @cf4u/web dev",
+    "build": "pnpm -r --filter \"./packages/*\" build && pnpm --filter @cf4u/web build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @cf4u/db generate",
+    "db:migrate": "pnpm --filter @cf4u/db migrate",
+    "db:seed": "pnpm --filter @cf4u/db seed"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
