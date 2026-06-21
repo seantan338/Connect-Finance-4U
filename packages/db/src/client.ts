@@ -37,8 +37,9 @@ export async function withAuditContext<T>(
   fn: (tx: Database) => Promise<T>,
 ): Promise<T> {
   return db.transaction(async (tx) => {
-    await tx.execute(sql`SET LOCAL app.user_id = ${ctx.userId}`);
-    if (ctx.ip) await tx.execute(sql`SET LOCAL app.ip = ${ctx.ip}`);
+    // SET LOCAL 不接受 bind 参数(会 42601);用 set_config(..., is_local=true) 等价且可参数化。
+    await tx.execute(sql`SELECT set_config('app.user_id', ${ctx.userId}, true)`);
+    if (ctx.ip) await tx.execute(sql`SELECT set_config('app.ip', ${ctx.ip}, true)`);
     return fn(tx as unknown as Database);
   });
 }

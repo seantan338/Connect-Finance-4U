@@ -338,6 +338,9 @@ DO $$ BEGIN
     END IF;
 END $$;
 
+-- 显式授 schema USAGE:不依赖 public 对 PUBLIC 的默认授权(schema 重建后会丢)。
+-- 没有它,下面的表级 GRANT 形同虚设,ledger_app 连表都看不到。
+GRANT USAGE ON SCHEMA public TO ledger_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ledger_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ledger_app;
 -- audit_log 例外:红线
