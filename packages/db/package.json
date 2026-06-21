@@ -18,9 +18,10 @@
   "types": "./src/index.ts",
   "scripts": {
     "generate": "drizzle-kit generate",
-    "migrate": "drizzle-kit migrate",
-    "studio": "drizzle-kit studio",
-    "seed": "tsx src/seed/index.ts",
+    "migrate": "dotenv -e ../../.env -- drizzle-kit migrate",
+    "studio": "dotenv -e ../../.env -- drizzle-kit studio",
+    "verify": "tsx --env-file=../../.env src/verify.ts",
+    "seed": "tsx --env-file=../../.env src/seed/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
+    "dotenv-cli": "^8.0.0",
     "drizzle-kit": "^0.31.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"

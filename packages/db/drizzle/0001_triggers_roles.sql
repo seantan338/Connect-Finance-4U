@@ -3,7 +3,7 @@
 -- cannot express: plpgsql functions, constraint triggers, audit triggers,
 -- and the restricted ledger_app role + GRANT/REVOKE.
 -- 红线:一句不漏。改动前先核对铁律 3 / 铁律 5。
--- Each top-level statement is one `--> statement-breakpoint` chunk.
+-- Statements are separated by drizzle breakpoint markers (one per top-level statement).
 -- =====================================================================
 
 -- ★ 铁律 3 · 防线 1 — posted 时强制 SUM(debit)=SUM(credit)(改 posted 凭证的行)
@@ -95,6 +95,10 @@ DO $$ BEGIN
         CREATE ROLE ledger_app LOGIN;
     END IF;
 END $$;
+--> statement-breakpoint
+-- 显式授 schema USAGE:不依赖 public 对 PUBLIC 的默认授权(DROP/CREATE schema 后会丢)。
+-- 没有它,下面的表级 GRANT 形同虚设,ledger_app 连表都看不到。
+GRANT USAGE ON SCHEMA public TO ledger_app;
 --> statement-breakpoint
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ledger_app;
 --> statement-breakpoint
