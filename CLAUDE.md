@@ -98,6 +98,10 @@
 5. 节奏:按 Roadmap milestone 走,每步做完停下来 review,不擅自往下个 milestone 冲。
 
 ## 当前进度
-- **Phase 1 · M1.1** — CoA + 手工 journal entry + trial balance 平账。**进行中**。
-- 范围纪律:M1.1 建全部表(trigger/CHECK/role 不阉割),但领域逻辑 + 前端只做
-  **CoA + manual journal entry + trial balance** 三块,不碰开票/收付款业务逻辑。
+- **Phase 1 · M1.1** — CoA + 手工 journal entry + trial balance 平账。**✅ 完成**。
+- **Phase 1 · M1.2** — 销售/采购发票 → 过账 → 三表(TB / P&L / Balance Sheet)自动生成。**✅ 完成**。
+- **下一步:M1.3**(Roadmap W16)— MyInvois 原生提交跑通(sandbox),拿到 UUID + valid。
+  ⚠️ 依赖外部认证申请(critical path),见 `docs/action-items.md`。
+- 仍未做(按 Roadmap 留后):收付款核销(payments)、期间关账 close + 结转分录(M1.4)、
+  真实 Firebase Auth 多租户(目前用 demo org/user 常量)。
+- 工作记录见 `docs/diary.md`;待 Sean 处理的事项见 `docs/action-items.md`。
