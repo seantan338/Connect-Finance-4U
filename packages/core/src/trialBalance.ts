@@ -1,9 +1,11 @@
 /**
  * Trial balance — 余额只从 POSTED journal_entries 推导(铁律 2)。
- * 汇总某期间每个 account 的 Σdebit / Σcredit,断言总额相等(铁律 3 的可观测体现)。
+ * as-at 口径(ADR-0002):汇总截至该 period 期末(entry_date <= period_end)的所有
+ * posted 分录的累计 Σdebit / Σcredit,断言总额相等(铁律 3 的可观测体现)。
  */
-import { and, eq, sql } from 'drizzle-orm';
-import { type Database, accounts, journalEntries, journalLines } from '@cf4u/db';
+import { and, eq, lte, sql } from 'drizzle-orm';
+import { type Database, accounts, fiscalPeriods, journalEntries, journalLines } from '@cf4u/db';
+import { NoFiscalPeriodError } from './errors.js';
 import { eqMoney, formatMoney, parseMoney, sumMoney, type Money } from './money.js';
 
 export interface TrialBalanceRow {
@@ -19,6 +21,7 @@ export interface TrialBalanceRow {
 export interface TrialBalance {
   orgId: string;
   periodId: string;
+  asOf: string; // period_end:余额截至此日
   rows: TrialBalanceRow[];
   totalDebit: string;
   totalCredit: string;
@@ -31,6 +34,13 @@ export async function getTrialBalance(
   orgId: string,
   periodId: string,
 ): Promise<TrialBalance> {
+  const [period] = await db
+    .select({ end: fiscalPeriods.periodEnd })
+    .from(fiscalPeriods)
+    .where(and(eq(fiscalPeriods.id, periodId), eq(fiscalPeriods.orgId, orgId)));
+  if (!period) throw new NoFiscalPeriodError(periodId);
+  const asOf = period.end;
+
   const rows = await db
     .select({
       accountId: accounts.id,
@@ -47,7 +57,7 @@ export async function getTrialBalance(
     .where(
       and(
         eq(journalEntries.orgId, orgId),
-        eq(journalEntries.periodId, periodId),
+        lte(journalEntries.entryDate, asOf), // as-at 期末累计
         eq(journalEntries.isPosted, true), // 铁律 2:只看 posted
       ),
     )
@@ -84,6 +94,7 @@ export async function getTrialBalance(
   return {
     orgId,
     periodId,
+    asOf,
     rows: out,
     totalDebit: formatMoney(totalDebit),
     totalCredit: formatMoney(totalCredit),

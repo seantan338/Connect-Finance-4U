@@ -16,6 +16,7 @@
 | `docs/Roadmap.md` | Phase / Milestone 计划 |
 | `docs/data-model-spec.html` | 架构决策(为什么 Postgres 不是 Firestore) |
 | `docs/schema.sql` | 数据库真相(含所有 CHECK / trigger / role) |
+| `docs/decisions.md` | 实现层决策记录(ADR);先按行业标准,不适用再改 |
 
 ---
 
