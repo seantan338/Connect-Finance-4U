@@ -11,10 +11,7 @@
 import { createDb, withAuditContext } from '../client.js';
 import { appUsers, currencies, fiscalPeriods, organizations } from '../schema.js';
 import { MPERS_TRADING_COA, seedChartOfAccounts } from './coa-mpers.js';
-
-// 固定 demo 标识,保证幂等
-const DEMO_ORG_ID = '00000000-0000-0000-0000-0000000000a1';
-const DEMO_USER_ID = '00000000-0000-0000-0000-0000000000b1';
+import { DEMO_ORG_ID, DEMO_USER_ID } from './demo.js';
 
 async function main() {
   const url = process.env.DATABASE_URL;

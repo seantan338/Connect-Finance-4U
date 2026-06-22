@@ -8,6 +8,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./money": {
+      "types": "./src/money.ts",
+      "default": "./src/money.ts"
     }
   },
   "main": "./src/index.ts",

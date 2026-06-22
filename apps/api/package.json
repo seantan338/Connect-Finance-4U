@@ -1,0 +1,24 @@
+{
+  "name": "@cf4u/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Minimal API slice — exposes @cf4u/core over the ledger_app role for the web app.",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/server.ts",
+    "start": "tsx --env-file=../../.env src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cf4u/core": "workspace:*",
+    "@cf4u/db": "workspace:*",
+    "@hono/node-server": "^1.14.0",
+    "drizzle-orm": "^0.44.2",
+    "hono": "^4.7.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}

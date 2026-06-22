@@ -1,1 +1,21 @@
 @import 'tailwindcss';
+
+/* Brand palette — 借鉴四份真相文档的会计配色:ink/gold + credit-green/debit-red。 */
+@theme {
+  --color-ink: #14213d;
+  --color-paper: #fbfaf8;
+  --color-panel: #ffffff;
+  --color-line: #e4dfd4;
+  --color-credit: #1b7f5b;
+  --color-credit-soft: #e7f2ec;
+  --color-debit: #9e2a3b;
+  --color-debit-soft: #f6e9eb;
+  --color-gold: #b8901f;
+  --color-gold-soft: #f7efd8;
+  --color-expense: #7c4da0;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
