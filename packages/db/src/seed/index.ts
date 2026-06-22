@@ -9,7 +9,7 @@
  * 仅供 step 4/5 本地开发与测试。
  */
 import { createDb, withAuditContext } from '../client.js';
-import { appUsers, currencies, fiscalPeriods, organizations } from '../schema.js';
+import { appUsers, currencies, fiscalPeriods, organizations, taxCodes } from '../schema.js';
 import { MPERS_TRADING_COA, seedChartOfAccounts } from './coa-mpers.js';
 import { DEMO_ORG_ID, DEMO_USER_ID } from './demo.js';
 
@@ -66,7 +66,16 @@ async function main() {
       })
       .onConflictDoNothing();
 
-    // 4. MPERS CoA — 在 audit 上下文里跑,write_audit 记到 demo user 名下
+    // 4. SST tax codes(铁律 4)
+    await db
+      .insert(taxCodes)
+      .values([
+        { orgId: DEMO_ORG_ID, code: 'SST-6', rate: '0.0600' },
+        { orgId: DEMO_ORG_ID, code: 'SST-0', rate: '0.0000' },
+      ])
+      .onConflictDoNothing();
+
+    // 5. MPERS CoA — 在 audit 上下文里跑,write_audit 记到 demo user 名下
     const inserted = await withAuditContext(db, { userId: DEMO_USER_ID }, (tx) =>
       seedChartOfAccounts(tx, DEMO_ORG_ID),
     );
@@ -74,6 +83,7 @@ async function main() {
     console.log(`✓ currencies ensured (MYR, SGD, USD)`);
     console.log(`✓ demo org ${DEMO_ORG_ID} (Demo Trading Sdn Bhd)`);
     console.log(`✓ fiscal period ${year}-01-01 … ${year}-12-31 (open)`);
+    console.log(`✓ SST tax codes ensured (SST-6, SST-0)`);
     console.log(
       `✓ MPERS CoA: ${inserted} accounts inserted` +
         (inserted === 0 ? ' (already seeded — idempotent)' : '') +

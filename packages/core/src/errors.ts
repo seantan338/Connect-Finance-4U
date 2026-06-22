@@ -65,3 +65,17 @@ export class AlreadyPostedError extends DomainError {
     super(`journal entry ${id} is already posted`, 'ALREADY_POSTED');
   }
 }
+
+/** 入参校验失败(contacts / tax codes 等)。 */
+export class ValidationError extends DomainError {
+  constructor(message: string) {
+    super(message, 'VALIDATION');
+  }
+}
+
+/** 唯一约束冲突(如 tax_code 重复)。 */
+export class ConflictError extends DomainError {
+  constructor(message: string) {
+    super(message, 'CONFLICT');
+  }
+}

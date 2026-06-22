@@ -38,6 +38,24 @@ export interface TrialBalance {
   balanced: boolean;
 }
 
+export type ContactKind = 'customer' | 'supplier' | 'both';
+
+export interface Contact {
+  id: string;
+  kind: ContactKind;
+  name: string;
+  tin: string | null;
+  brn: string | null;
+  sstNo: string | null;
+  email: string | null;
+}
+
+export interface TaxCode {
+  id: string;
+  code: string;
+  rate: string;
+}
+
 export interface JournalLineInput {
   accountId: string;
   debit?: string;
@@ -78,4 +96,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  contacts: (kind?: ContactKind) =>
+    req<Contact[]>(`/api/contacts${kind ? `?kind=${kind}` : ''}`),
+  createContact: (body: {
+    kind: ContactKind;
+    name: string;
+    tin?: string;
+    brn?: string;
+    sstNo?: string;
+    email?: string;
+  }) => req<{ id: string }>('/api/contacts', { method: 'POST', body: JSON.stringify(body) }),
+  taxCodes: () => req<TaxCode[]>('/api/tax-codes'),
 };

@@ -19,7 +19,12 @@ import {
   createJournalEntry,
   postEntry,
   getTrialBalance,
+  createContact,
+  listContacts,
+  createTaxCode,
+  listTaxCodes,
   DomainError,
+  type ContactKind,
   type JournalLineInput,
 } from '@cf4u/core';
 
@@ -68,6 +73,42 @@ app.get('/api/periods', async (c) => {
     .where(eq(fiscalPeriods.orgId, ORG))
     .orderBy(fiscalPeriods.periodStart);
   return c.json(rows);
+});
+
+app.get('/api/contacts', async (c) => {
+  const kind = c.req.query('kind') as ContactKind | undefined;
+  return c.json(await listContacts(db, ORG, kind));
+});
+
+app.post('/api/contacts', async (c) => {
+  try {
+    const b = await c.req.json<{
+      kind: ContactKind;
+      name: string;
+      tin?: string;
+      brn?: string;
+      sstNo?: string;
+      email?: string;
+    }>();
+    const res = await createContact(db, { orgId: ORG, actorUserId: USER, ...b });
+    return c.json(res, 201);
+  } catch (e) {
+    const { status, body } = fail(e);
+    return c.json(body, status);
+  }
+});
+
+app.get('/api/tax-codes', async (c) => c.json(await listTaxCodes(db, ORG)));
+
+app.post('/api/tax-codes', async (c) => {
+  try {
+    const b = await c.req.json<{ code: string; rate: string }>();
+    const res = await createTaxCode(db, { orgId: ORG, ...b });
+    return c.json(res, 201);
+  } catch (e) {
+    const { status, body } = fail(e);
+    return c.json(body, status);
+  }
 });
 
 interface CreateBody {

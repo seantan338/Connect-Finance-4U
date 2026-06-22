@@ -4,3 +4,5 @@ export * from './money.js';
 export * from './errors.js';
 export * from './journal.js';
 export * from './trialBalance.js';
+export * from './contacts.js';
+export * from './taxCodes.js';

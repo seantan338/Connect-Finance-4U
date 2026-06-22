@@ -9,10 +9,12 @@ import {
   accounts,
   appUsers,
   auditLog,
+  contacts,
   currencies,
   fiscalPeriods,
   journalEntries,
   organizations,
+  taxCodes,
 } from '@cf4u/db';
 type SqlClient = ReturnType<typeof createDb>['sqlClient'];
 
@@ -84,6 +86,8 @@ export async function teardownFixture(f: Fixture): Promise<void> {
   const { db, orgId, userId } = f;
   await db.delete(journalEntries).where(eq(journalEntries.orgId, orgId)); // cascades lines
   await db.delete(accounts).where(eq(accounts.orgId, orgId));
+  await db.delete(contacts).where(eq(contacts.orgId, orgId));
+  await db.delete(taxCodes).where(eq(taxCodes.orgId, orgId));
   await db.delete(fiscalPeriods).where(eq(fiscalPeriods.orgId, orgId));
   await db.delete(auditLog).where(eq(auditLog.orgId, orgId)); // admin can; cleans trigger output
   await db.delete(organizations).where(eq(organizations.id, orgId));

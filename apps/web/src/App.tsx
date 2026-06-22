@@ -2,11 +2,13 @@ import { useState } from 'react';
 import ChartOfAccounts from './pages/ChartOfAccounts.js';
 import NewJournalEntry from './pages/NewJournalEntry.js';
 import TrialBalancePage from './pages/TrialBalancePage.js';
+import Contacts from './pages/Contacts.js';
 
-type Tab = 'coa' | 'entry' | 'tb';
+type Tab = 'coa' | 'entry' | 'tb' | 'contacts';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'coa', label: 'Chart of Accounts' },
+  { id: 'contacts', label: 'Contacts' },
   { id: 'entry', label: 'New Journal Entry' },
   { id: 'tb', label: 'Trial Balance' },
 ];
@@ -41,6 +43,7 @@ export default function App() {
 
       <main className="max-w-5xl mx-auto px-6 py-8">
         {tab === 'coa' && <ChartOfAccounts />}
+        {tab === 'contacts' && <Contacts />}
         {tab === 'entry' && <NewJournalEntry />}
         {tab === 'tb' && <TrialBalancePage />}
       </main>
