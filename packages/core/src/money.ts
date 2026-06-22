@@ -64,6 +64,11 @@ export const eqMoney = (a: Money, b: Money): boolean => a === b;
 export const gtZero = (a: Money): boolean => a > 0n;
 export const sumMoney = (xs: Money[]): Money => xs.reduce((acc, x) => acc + x, 0n);
 
+/** 两个 scale-4 金额相乘(如 qty × unit_price),round half-up 回 scale 4。 */
+export function mulMoney(a: Money, b: Money): Money {
+  return divRoundHalfUp(a * b, AMOUNT_FACTOR);
+}
+
 /**
  * 按汇率折算:base = amount * rate,结果 round half-up 到 scale 4。
  * 单币种 M1.1 下 rate='1' → 精确返回原值。

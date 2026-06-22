@@ -55,12 +55,13 @@ export interface CreateJournalEntryInput {
   periodId?: string;
   memo?: string;
   source?: JournalSource;
+  sourceId?: string; // 指向 invoices/payments 等
   createdBy: string; // app_users.id,同时作为 audit actor
   ip?: string;
   lines: JournalLineInput[];
 }
 
-interface PreparedLine {
+export interface PreparedLine {
   accountId: string;
   debit: Money;
   credit: Money;
@@ -112,7 +113,7 @@ export function prepareAndValidate(lines: JournalLineInput[]): {
   return { prepared, totalDebit, totalCredit };
 }
 
-async function resolveOpenPeriod(
+export async function resolveOpenPeriod(
   tx: Database,
   orgId: string,
   periodId: string | undefined,
@@ -140,7 +141,11 @@ async function resolveOpenPeriod(
   return period;
 }
 
-async function assertAccountsValid(tx: Database, orgId: string, accountIds: string[]): Promise<void> {
+export async function assertAccountsValid(
+  tx: Database,
+  orgId: string,
+  accountIds: string[],
+): Promise<void> {
   const ids = [...new Set(accountIds)];
   const rows = await tx
     .select({ id: accounts.id })
@@ -159,6 +164,67 @@ export interface CreatedEntry {
   periodId: string;
 }
 
+export interface EntryHeader {
+  orgId: string;
+  entryDate: string;
+  periodId: string;
+  memo?: string;
+  source: JournalSource;
+  sourceId?: string;
+  createdBy: string;
+}
+
+/**
+ * 分配 entry_no + 插入 header + lines。供 createJournalEntry(draft)与 issueInvoice(posted)复用。
+ * 必须在 withAuditContext 事务内调用。`post=true` 时 header 直接 is_posted=true,
+ * commit 时 trg_balanced / trg_balanced_on_post 做最后兜底。
+ */
+export async function allocateAndInsertEntry(
+  tx: Database,
+  header: EntryHeader,
+  prepared: PreparedLine[],
+  post: boolean,
+): Promise<CreatedEntry> {
+  // 串行化每个 org 的 entry_no 分配,避免并发撞 UNIQUE(org_id, entry_no)。
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${header.orgId}))`);
+
+  const [seq] = await tx
+    .select({ next: sql<number>`COALESCE(MAX(${journalEntries.entryNo}), 0) + 1` })
+    .from(journalEntries)
+    .where(eq(journalEntries.orgId, header.orgId));
+  const nextNo = Number(seq!.next);
+
+  const [entry] = await tx
+    .insert(journalEntries)
+    .values({
+      orgId: header.orgId,
+      entryNo: nextNo,
+      entryDate: header.entryDate,
+      periodId: header.periodId,
+      memo: header.memo,
+      source: header.source,
+      sourceId: header.sourceId,
+      isPosted: post,
+      createdBy: header.createdBy,
+    })
+    .returning({ id: journalEntries.id, entryNo: journalEntries.entryNo });
+
+  await tx.insert(journalLines).values(
+    prepared.map((p) => ({
+      entryId: entry!.id,
+      accountId: p.accountId,
+      debit: formatMoney(p.debit),
+      credit: formatMoney(p.credit),
+      currency: p.currency,
+      fxRate: p.fxRate,
+      baseAmount: formatMoney(p.baseAmount),
+      lineMemo: p.lineMemo,
+    })),
+  );
+
+  return { id: entry!.id, entryNo: Number(entry!.entryNo), periodId: header.periodId };
+}
+
 export async function createJournalEntry(
   db: Database,
   input: CreateJournalEntryInput,
@@ -167,46 +233,22 @@ export async function createJournalEntry(
   const { prepared } = prepareAndValidate(input.lines);
 
   return withAuditContext(db, { userId: input.createdBy, ip: input.ip }, async (tx) => {
-    // 串行化每个 org 的 entry_no 分配,避免并发撞 UNIQUE(org_id, entry_no)。
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${input.orgId}))`);
-
     const period = await resolveOpenPeriod(tx, input.orgId, input.periodId, input.entryDate);
     await assertAccountsValid(tx, input.orgId, prepared.map((p) => p.accountId));
-
-    const [seq] = await tx
-      .select({ next: sql<number>`COALESCE(MAX(${journalEntries.entryNo}), 0) + 1` })
-      .from(journalEntries)
-      .where(eq(journalEntries.orgId, input.orgId));
-    const nextNo = Number(seq!.next);
-
-    const [entry] = await tx
-      .insert(journalEntries)
-      .values({
+    return allocateAndInsertEntry(
+      tx,
+      {
         orgId: input.orgId,
-        entryNo: nextNo,
         entryDate: input.entryDate,
         periodId: period.id,
         memo: input.memo,
         source: input.source ?? 'manual',
-        isPosted: false,
+        sourceId: input.sourceId,
         createdBy: input.createdBy,
-      })
-      .returning({ id: journalEntries.id, entryNo: journalEntries.entryNo });
-
-    await tx.insert(journalLines).values(
-      prepared.map((p) => ({
-        entryId: entry!.id,
-        accountId: p.accountId,
-        debit: formatMoney(p.debit),
-        credit: formatMoney(p.credit),
-        currency: p.currency,
-        fxRate: p.fxRate,
-        baseAmount: formatMoney(p.baseAmount),
-        lineMemo: p.lineMemo,
-      })),
+      },
+      prepared,
+      false,
     );
-
-    return { id: entry!.id, entryNo: Number(entry!.entryNo), periodId: period.id };
   });
 }
 

@@ -6,3 +6,4 @@ export * from './journal.js';
 export * from './trialBalance.js';
 export * from './contacts.js';
 export * from './taxCodes.js';
+export * from './invoice.js';

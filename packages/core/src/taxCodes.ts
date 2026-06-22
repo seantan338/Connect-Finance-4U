@@ -5,6 +5,7 @@
 import { eq } from 'drizzle-orm';
 import { type Database, taxCodes } from '@cf4u/db';
 import { ConflictError, ValidationError } from './errors.js';
+import { isUniqueViolation } from './pgError.js';
 
 const RATE_RE = /^\d{1,2}(\.\d{1,4})?$/;
 
@@ -27,13 +28,6 @@ export async function createTaxCode(db: Database, input: CreateTaxCodeInput): Pr
     if (isUniqueViolation(e)) throw new ConflictError(`tax code already exists: ${input.code}`);
     throw e;
   }
-}
-
-/** drizzle 把 PostgresError 包了一层,23505 在 e 或 e.cause 上,两层都查。 */
-function isUniqueViolation(e: unknown): boolean {
-  const code = (x: unknown) =>
-    x && typeof x === 'object' && 'code' in x ? (x as { code?: string }).code : undefined;
-  return code(e) === '23505' || code((e as { cause?: unknown })?.cause) === '23505';
 }
 
 export interface TaxCodeRow {

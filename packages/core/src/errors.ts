@@ -73,9 +73,22 @@ export class ValidationError extends DomainError {
   }
 }
 
-/** 唯一约束冲突(如 tax_code 重复)。 */
+/** 唯一约束冲突(如 tax_code / invoice_no 重复)。 */
 export class ConflictError extends DomainError {
   constructor(message: string) {
     super(message, 'CONFLICT');
+  }
+}
+
+export class InvoiceNotFoundError extends DomainError {
+  constructor(id: string) {
+    super(`invoice ${id} not found`, 'INVOICE_NOT_FOUND');
+  }
+}
+
+/** 发票状态不允许该操作(如只有 draft 能 issue)。 */
+export class InvalidInvoiceStateError extends DomainError {
+  constructor(public readonly status: string) {
+    super(`invoice is ${status}, expected draft`, 'INVALID_INVOICE_STATE');
   }
 }

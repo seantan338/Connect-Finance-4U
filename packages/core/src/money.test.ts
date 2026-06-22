@@ -7,6 +7,7 @@ import {
   sumMoney,
   eqMoney,
   applyRate,
+  mulMoney,
   MoneyParseError,
 } from './money.js';
 
@@ -37,6 +38,13 @@ describe('money — decimal-safe', () => {
     expect(() => parseMoney('1.00001')).toThrow(MoneyParseError);
     expect(() => parseMoney('abc')).toThrow(MoneyParseError);
     expect(() => parseMoney('')).toThrow(MoneyParseError);
+  });
+
+  it('mulMoney: qty × unit_price rounds half-up to scale 4', () => {
+    expect(formatMoney(mulMoney(parseMoney('3'), parseMoney('10.50')))).toBe('31.5000');
+    expect(formatMoney(mulMoney(parseMoney('2.5'), parseMoney('4.4444')))).toBe('11.1110');
+    // 1.0001 * 1.0001 = 1.00020001 → 1.0002
+    expect(formatMoney(mulMoney(parseMoney('1.0001'), parseMoney('1.0001')))).toBe('1.0002');
   });
 
   it('applyRate: rate 1 is exact, otherwise round half-up to scale 4', () => {
