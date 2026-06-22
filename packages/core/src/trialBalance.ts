@@ -1,12 +1,10 @@
 /**
- * Trial balance — 余额只从 POSTED journal_entries 推导(铁律 2)。
- * as-at 口径(ADR-0002):汇总截至该 period 期末(entry_date <= period_end)的所有
- * posted 分录的累计 Σdebit / Σcredit,断言总额相等(铁律 3 的可观测体现)。
+ * Trial balance — 余额只从 POSTED journal_entries 推导(铁律 2),as-at 口径(ADR-0002)。
+ * 汇总截至期末每个 account 的累计 Σdebit / Σcredit,断言总额相等。
  */
-import { and, eq, lte, sql } from 'drizzle-orm';
-import { type Database, accounts, fiscalPeriods, journalEntries, journalLines } from '@cf4u/db';
-import { NoFiscalPeriodError } from './errors.js';
-import { eqMoney, formatMoney, parseMoney, sumMoney, type Money } from './money.js';
+import { type Database } from '@cf4u/db';
+import { postedBalancesAsOf } from './balances.js';
+import { eqMoney, formatMoney, subMoney, sumMoney, type Money } from './money.js';
 
 export interface TrialBalanceRow {
   accountId: string;
@@ -21,7 +19,7 @@ export interface TrialBalanceRow {
 export interface TrialBalance {
   orgId: string;
   periodId: string;
-  asOf: string; // period_end:余额截至此日
+  asOf: string;
   rows: TrialBalanceRow[];
   totalDebit: string;
   totalCredit: string;
@@ -34,57 +32,21 @@ export async function getTrialBalance(
   orgId: string,
   periodId: string,
 ): Promise<TrialBalance> {
-  const [period] = await db
-    .select({ end: fiscalPeriods.periodEnd })
-    .from(fiscalPeriods)
-    .where(and(eq(fiscalPeriods.id, periodId), eq(fiscalPeriods.orgId, orgId)));
-  if (!period) throw new NoFiscalPeriodError(periodId);
-  const asOf = period.end;
-
-  const rows = await db
-    .select({
-      accountId: accounts.id,
-      code: accounts.code,
-      name: accounts.name,
-      accountType: accounts.accountType,
-      normalBalance: accounts.normalBalance,
-      debit: sql<string>`COALESCE(SUM(${journalLines.debit}), 0)`,
-      credit: sql<string>`COALESCE(SUM(${journalLines.credit}), 0)`,
-    })
-    .from(journalLines)
-    .innerJoin(journalEntries, eq(journalEntries.id, journalLines.entryId))
-    .innerJoin(accounts, eq(accounts.id, journalLines.accountId))
-    .where(
-      and(
-        eq(journalEntries.orgId, orgId),
-        lte(journalEntries.entryDate, asOf), // as-at 期末累计
-        eq(journalEntries.isPosted, true), // 铁律 2:只看 posted
-      ),
-    )
-    .groupBy(
-      accounts.id,
-      accounts.code,
-      accounts.name,
-      accounts.accountType,
-      accounts.normalBalance,
-    )
-    .orderBy(accounts.code);
+  const { asOf, balances } = await postedBalancesAsOf(db, orgId, periodId);
 
   const debits: Money[] = [];
   const credits: Money[] = [];
-  const out: TrialBalanceRow[] = rows.map((r) => {
-    const d = parseMoney(r.debit);
-    const c = parseMoney(r.credit);
-    debits.push(d);
-    credits.push(c);
+  const rows: TrialBalanceRow[] = balances.map((b) => {
+    debits.push(b.debit);
+    credits.push(b.credit);
     return {
-      accountId: r.accountId,
-      code: r.code,
-      name: r.name,
-      accountType: r.accountType,
-      normalBalance: r.normalBalance,
-      debit: formatMoney(d),
-      credit: formatMoney(c),
+      accountId: b.accountId,
+      code: b.code,
+      name: b.name,
+      accountType: b.accountType,
+      normalBalance: b.normalBalance,
+      debit: formatMoney(b.debit),
+      credit: formatMoney(b.credit),
     };
   });
 
@@ -95,9 +57,9 @@ export async function getTrialBalance(
     orgId,
     periodId,
     asOf,
-    rows: out,
+    rows,
     totalDebit: formatMoney(totalDebit),
     totalCredit: formatMoney(totalCredit),
-    balanced: eqMoney(totalDebit, totalCredit),
+    balanced: eqMoney(subMoney(totalDebit, totalCredit), 0n),
   };
 }
