@@ -56,6 +56,57 @@ export interface TaxCode {
   rate: string;
 }
 
+export interface Invoice {
+  id: string;
+  direction: 'sales' | 'purchase';
+  docType: string;
+  invoiceNo: string;
+  contactName: string;
+  issueDate: string;
+  currency: string;
+  subtotal: string;
+  taxTotal: string;
+  grandTotal: string;
+  status: string;
+  journalEntryId: string | null;
+}
+
+export interface InvoiceLineInput {
+  description: string;
+  qty?: string;
+  unitPrice: string;
+  accountId: string;
+  taxCodeId?: string;
+}
+
+export interface StatementRow {
+  accountId: string;
+  code: string;
+  name: string;
+  amount: string;
+}
+
+export interface ProfitAndLoss {
+  asOf: string;
+  income: StatementRow[];
+  expense: StatementRow[];
+  totalIncome: string;
+  totalExpense: string;
+  netProfit: string;
+}
+
+export interface BalanceSheet {
+  asOf: string;
+  assets: StatementRow[];
+  liabilities: StatementRow[];
+  equity: StatementRow[];
+  currentYearEarnings: string;
+  totalAssets: string;
+  totalLiabilities: string;
+  totalEquity: string;
+  balanced: boolean;
+}
+
 export interface JournalLineInput {
   accountId: string;
   debit?: string;
@@ -107,4 +158,23 @@ export const api = {
     email?: string;
   }) => req<{ id: string }>('/api/contacts', { method: 'POST', body: JSON.stringify(body) }),
   taxCodes: () => req<TaxCode[]>('/api/tax-codes'),
+  invoices: () => req<Invoice[]>('/api/invoices'),
+  createInvoice: (body: {
+    direction: 'sales' | 'purchase';
+    invoiceNo: string;
+    contactId: string;
+    issueDate: string;
+    issue?: boolean;
+    lines: InvoiceLineInput[];
+  }) =>
+    req<{ id: string; invoiceNo: string; subtotal: string; taxTotal: string; grandTotal: string }>(
+      '/api/invoices',
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  issueInvoice: (id: string) =>
+    req<{ journalEntryId: string; entryNo: number }>(`/api/invoices/${id}/issue`, { method: 'POST' }),
+  profitAndLoss: (periodId: string) =>
+    req<ProfitAndLoss>(`/api/profit-and-loss?periodId=${encodeURIComponent(periodId)}`),
+  balanceSheet: (periodId: string) =>
+    req<BalanceSheet>(`/api/balance-sheet?periodId=${encodeURIComponent(periodId)}`),
 };

@@ -3,14 +3,18 @@ import ChartOfAccounts from './pages/ChartOfAccounts.js';
 import NewJournalEntry from './pages/NewJournalEntry.js';
 import TrialBalancePage from './pages/TrialBalancePage.js';
 import Contacts from './pages/Contacts.js';
+import Invoices from './pages/Invoices.js';
+import Reports from './pages/Reports.js';
 
-type Tab = 'coa' | 'entry' | 'tb' | 'contacts';
+type Tab = 'coa' | 'contacts' | 'invoices' | 'entry' | 'tb' | 'reports';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'coa', label: 'Chart of Accounts' },
   { id: 'contacts', label: 'Contacts' },
+  { id: 'invoices', label: 'Invoices' },
   { id: 'entry', label: 'New Journal Entry' },
   { id: 'tb', label: 'Trial Balance' },
+  { id: 'reports', label: 'Reports' },
 ];
 
 export default function App() {
@@ -44,8 +48,10 @@ export default function App() {
       <main className="max-w-5xl mx-auto px-6 py-8">
         {tab === 'coa' && <ChartOfAccounts />}
         {tab === 'contacts' && <Contacts />}
+        {tab === 'invoices' && <Invoices />}
         {tab === 'entry' && <NewJournalEntry />}
         {tab === 'tb' && <TrialBalancePage />}
+        {tab === 'reports' && <Reports />}
       </main>
     </div>
   );

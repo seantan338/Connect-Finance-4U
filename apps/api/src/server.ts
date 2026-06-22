@@ -19,12 +19,20 @@ import {
   createJournalEntry,
   postEntry,
   getTrialBalance,
+  getProfitAndLoss,
+  getBalanceSheet,
   createContact,
   listContacts,
   createTaxCode,
   listTaxCodes,
+  createInvoice,
+  issueInvoice,
+  listInvoices,
   DomainError,
   type ContactKind,
+  type InvoiceDirection,
+  type InvoiceDocType,
+  type InvoiceLineInput,
   type JournalLineInput,
 } from '@cf4u/core';
 
@@ -151,16 +159,65 @@ app.post('/api/journal-entries/:id/post', async (c) => {
   }
 });
 
-app.get('/api/trial-balance', async (c) => {
-  const periodId = c.req.query('periodId');
-  if (!periodId) return c.json({ code: 'BAD_REQUEST', message: 'periodId required' }, 400);
+app.get('/api/invoices', async (c) => c.json(await listInvoices(db, ORG)));
+
+interface InvoiceBody {
+  direction: InvoiceDirection;
+  docType?: InvoiceDocType;
+  invoiceNo: string;
+  contactId: string;
+  issueDate: string;
+  issue?: boolean;
+  lines: InvoiceLineInput[];
+}
+
+app.post('/api/invoices', async (c) => {
   try {
-    return c.json(await getTrialBalance(db, ORG, periodId));
+    const b = await c.req.json<InvoiceBody>();
+    const inv = await createInvoice(db, {
+      orgId: ORG,
+      createdBy: USER,
+      direction: b.direction,
+      docType: b.docType,
+      invoiceNo: b.invoiceNo,
+      contactId: b.contactId,
+      issueDate: b.issueDate,
+      lines: b.lines ?? [],
+    });
+    let issued = null;
+    if (b.issue) issued = await issueInvoice(db, { invoiceId: inv.id, userId: USER });
+    return c.json({ ...inv, issued }, 201);
   } catch (e) {
-    const { status, body: b } = fail(e);
-    return c.json(b, status);
+    const { status, body } = fail(e);
+    return c.json(body, status);
   }
 });
+
+app.post('/api/invoices/:id/issue', async (c) => {
+  try {
+    return c.json(await issueInvoice(db, { invoiceId: c.req.param('id'), userId: USER }));
+  } catch (e) {
+    const { status, body } = fail(e);
+    return c.json(body, status);
+  }
+});
+
+const statement =
+  (fn: typeof getTrialBalance | typeof getProfitAndLoss | typeof getBalanceSheet) =>
+  async (c: import('hono').Context) => {
+    const periodId = c.req.query('periodId');
+    if (!periodId) return c.json({ code: 'BAD_REQUEST', message: 'periodId required' }, 400);
+    try {
+      return c.json(await fn(db, ORG, periodId));
+    } catch (e) {
+      const { status, body } = fail(e);
+      return c.json(body, status);
+    }
+  };
+
+app.get('/api/trial-balance', statement(getTrialBalance));
+app.get('/api/profit-and-loss', statement(getProfitAndLoss));
+app.get('/api/balance-sheet', statement(getBalanceSheet));
 
 const port = Number(process.env.API_PORT ?? 8787);
 serve({ fetch: app.fetch, port });

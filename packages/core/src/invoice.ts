@@ -186,6 +186,44 @@ export async function createInvoice(db: Database, input: CreateInvoiceInput): Pr
   });
 }
 
+export interface InvoiceListRow {
+  id: string;
+  direction: InvoiceDirection;
+  docType: InvoiceDocType;
+  invoiceNo: string;
+  contactName: string;
+  issueDate: string;
+  currency: string;
+  subtotal: string;
+  taxTotal: string;
+  grandTotal: string;
+  status: string;
+  journalEntryId: string | null;
+}
+
+export async function listInvoices(db: Database, orgId: string): Promise<InvoiceListRow[]> {
+  const rows = await db
+    .select({
+      id: invoices.id,
+      direction: invoices.direction,
+      docType: invoices.docType,
+      invoiceNo: invoices.invoiceNo,
+      contactName: contacts.name,
+      issueDate: invoices.issueDate,
+      currency: invoices.currency,
+      subtotal: invoices.subtotal,
+      taxTotal: invoices.taxTotal,
+      grandTotal: invoices.grandTotal,
+      status: invoices.status,
+      journalEntryId: invoices.journalEntryId,
+    })
+    .from(invoices)
+    .innerJoin(contacts, eq(contacts.id, invoices.contactId))
+    .where(eq(invoices.orgId, orgId))
+    .orderBy(invoices.issueDate);
+  return rows as InvoiceListRow[];
+}
+
 async function resolveSystemAccount(tx: Database, orgId: string, code: string): Promise<string> {
   const [row] = await tx
     .select({ id: accounts.id })
