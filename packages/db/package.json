@@ -21,6 +21,7 @@
     "migrate": "dotenv -e ../../.env -- drizzle-kit migrate",
     "studio": "dotenv -e ../../.env -- drizzle-kit studio",
     "verify": "tsx --env-file=../../.env src/verify.ts",
+    "set-app-password": "tsx --env-file=../../.env src/set-app-password.ts",
     "seed": "tsx --env-file=../../.env src/seed/index.ts",
     "typecheck": "tsc --noEmit"
   },

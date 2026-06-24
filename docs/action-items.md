@@ -14,7 +14,7 @@
      - `DATABASE_URL`(admin/owner,需有 `CREATEROLE` 权限)
      - `APP_DATABASE_URL`(运行时用的 `ledger_app` 角色)
    - 跑:`pnpm --filter @cf4u/db migrate`
-   - 设密码:`psql "$DATABASE_URL" -c "ALTER ROLE ledger_app PASSWORD '<挑一个>';"`,把密码填进 `APP_DATABASE_URL`
+   - 设密码(免装 psql):`pnpm --filter @cf4u/db set-app-password <挑一个>`,把同一个密码填进 `APP_DATABASE_URL`
    - 跑:`pnpm --filter @cf4u/db seed` 然后 `pnpm --filter @cf4u/db verify`(期望 19/19)
    - ⚠️ 若 Zeabur 主账号没有 `CREATEROLE`,告诉我,我改用 migration 外建角色的方案。
 

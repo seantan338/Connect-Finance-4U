@@ -29,7 +29,7 @@ pnpm install
 cp .env.example .env            # fill DATABASE_URL (admin) + APP_DATABASE_URL (ledger_app)
 
 pnpm --filter @cf4u/db migrate                                  # tables + triggers + role
-psql "$DATABASE_URL" -c "ALTER ROLE ledger_app PASSWORD '...';" # then put it in APP_DATABASE_URL
+pnpm --filter @cf4u/db set-app-password <pw>                    # set ledger_app pw (no psql needed); same pw → APP_DATABASE_URL
 pnpm --filter @cf4u/db seed                                     # demo org + MPERS CoA + SST codes
 pnpm --filter @cf4u/db verify                                   # asserts the red-line invariants (19/19)
 
