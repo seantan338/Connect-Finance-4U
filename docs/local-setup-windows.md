@@ -47,17 +47,30 @@ pnpm --filter @cf4u/db seed
 pnpm --filter @cf4u/db verify                    # 期望 19/19
 ```
 
-## F. 跑起来(两个 PowerShell 窗口,都在项目目录)
+## F. 跑起来(一条命令同时起 api + web)
 ```powershell
-pnpm --filter @cf4u/api dev     # 窗口1 → http://localhost:8787
-pnpm --filter @cf4u/web dev     # 窗口2 → http://localhost:5173
+pnpm dev          # api → http://localhost:8787 · web → http://localhost:5173
 ```
+> 想分开看日志:开两个 PowerShell,分别 `pnpm dev:api` 和 `pnpm dev:web`。
+
 浏览器开 **http://localhost:5173**:CoA / Contacts / Invoices / New Journal Entry / Trial Balance / Reports。
 试一张销售发票点 issue,看三表自动平账。
 
 ## 常见坑
-- **SSL**:Zeabur 公网库常要 SSL → 连接串末尾加 `?sslmode=require`。
-- **`CREATE ROLE` 失败**:Zeabur 的 root 没 `CREATEROLE` 权限 → 把报错发出来,改用不靠应用建角色的方案。
-- **端口被占**:8787 / 5173 被占就先关掉占用进程,或改 `API_PORT` 环境变量。
+- **SSL**:Zeabur 公网库通常要 SSL。两条连接串末尾都加 `?sslmode=require`(postgres.js 的 `require`
+  = 加密但不校验自签证书,正合用)。仍报 `self-signed certificate` 就把报错发我。
+- **`CREATE ROLE` 失败 / `permission denied to create role`**:`migrate` 在建 `ledger_app` 角色时,
+  若 Zeabur 的 root **不是** superuser、也没 `CREATEROLE`,这步会失败。补救:在 Zeabur 该 Postgres 服务的
+  SQL console(或任意 admin 连接)里手动跑一次下面这段,再回去重跑 `set-app-password` / `seed` / `verify`:
+  ```sql
+  CREATE ROLE ledger_app LOGIN;
+  GRANT USAGE ON SCHEMA public TO ledger_app;
+  GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ledger_app;
+  GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ledger_app;
+  REVOKE INSERT, UPDATE, DELETE ON audit_log FROM ledger_app;   -- 红线:audit 只读
+  GRANT SELECT ON audit_log TO ledger_app;
+  ```
+  (这段就是迁移 `0001` 里的角色部分;手动跑等价。)若连这段都报权限不足,说明 root 权限太低 → 发我,换方案。
+- **端口被占**:8787 / 5173 被占就先关掉占用进程,或设环境变量 `API_PORT` 换 api 端口。
 
 跑通 `verify 19/19` + 浏览器能开 = 完成 `docs/action-items.md` 第 2 条(接真库)。

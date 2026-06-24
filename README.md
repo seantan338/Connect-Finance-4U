@@ -33,9 +33,10 @@ pnpm --filter @cf4u/db set-app-password <pw>                    # set ledger_app
 pnpm --filter @cf4u/db seed                                     # demo org + MPERS CoA + SST codes
 pnpm --filter @cf4u/db verify                                   # asserts the red-line invariants (19/19)
 
-pnpm --filter @cf4u/api dev     # http://localhost:8787
-pnpm --filter @cf4u/web dev     # http://localhost:5173
+pnpm dev                        # api :8787 + web :5173 together (or dev:api / dev:web)
 ```
+
+Windows + Zeabur walkthrough: `docs/local-setup-windows.md`.
 
 Tests: `pnpm -r test` (integration auto-skips without `DATABASE_URL`). Typecheck: `pnpm -r typecheck`.
 

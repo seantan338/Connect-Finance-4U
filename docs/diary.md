@@ -5,7 +5,19 @@
 
 ---
 
-## 2026-06-22 — M1.1 全部 + M1.2 全部(单 session)
+## 2026-06-24 — onboarding 加固(Sean 在 PC 上接 Zeabur,卡在部署)
+
+Sean 换到 Windows PC,准备接 Zeabur 真库,到 setup 步骤 C(Zeabur 部署)还没好就先睡。传了两份 Zeabur runtime log(空的,没东西可调)。趁这空档做了不需要真库就能做的 de-risk:
+
+- 写 `docs/local-setup-windows.md`(Windows + Zeabur 全流程),并加 `set-app-password` 脚本(免在 Windows 装 psql 就能给 `ledger_app` 设密码)。
+- **本地 PG 实测了文档里的 step E 全流程**:migrate → set-app-password → seed → verify,**verify 用 `ledger_app` 密码连上并 19/19 全绿**——证明 Sean 上 Zeabur 后这步必通。
+- QoL:加根 `pnpm dev`(concurrently 同时起 api+web)+ `dev:api`/`dev:web`;README/Windows 指南同步。
+- 文档加了两条最可能的 Zeabur 坑的现成补救:**SSL**(连接串加 `?sslmode=require`)、**root 无 CREATEROLE**(给出手动建 `ledger_app` 的 SQL,等价于迁移 0001 的角色段)。
+- 没动任何里程碑功能(等 Sean 定 M1.3 vs payments)。
+
+---
+
+## 2026-06-24 — M1.1 全部 + M1.2 全部(单 session)
 
 **人物:** Sean(owner)+ Claude(lead engineer)。节奏:每步真跑(本地起 Postgres 16 跑迁移/测试/全栈),做完 commit + push 到 `claude/connect-finance-phase-1-tfeu5l`。
 

@@ -9,15 +9,19 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "pnpm --filter @cf4u/web dev",
+    "dev": "concurrently -n api,web -c blue,green \"pnpm --filter @cf4u/api dev\" \"pnpm --filter @cf4u/web dev\"",
+    "dev:web": "pnpm --filter @cf4u/web dev",
+    "dev:api": "pnpm --filter @cf4u/api dev",
     "build": "pnpm -r --filter \"./packages/*\" build && pnpm --filter @cf4u/web build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "db:generate": "pnpm --filter @cf4u/db generate",
     "db:migrate": "pnpm --filter @cf4u/db migrate",
-    "db:seed": "pnpm --filter @cf4u/db seed"
+    "db:seed": "pnpm --filter @cf4u/db seed",
+    "db:verify": "pnpm --filter @cf4u/db verify",
+    "db:generate": "pnpm --filter @cf4u/db generate"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "typescript": "^5.8.3"
   }
 }
