@@ -100,8 +100,10 @@
 ## 当前进度
 - **Phase 1 · M1.1** — CoA + 手工 journal entry + trial balance 平账。**✅ 完成**。
 - **Phase 1 · M1.2** — 销售/采购发票 → 过账 → 三表(TB / P&L / Balance Sheet)自动生成。**✅ 完成**。
-- **下一步:M1.3**(Roadmap W16)— MyInvois 原生提交跑通(sandbox),拿到 UUID + valid。
-  ⚠️ 依赖外部认证申请(critical path),见 `docs/action-items.md`。
+- **Phase 1 · M1.3** — MyInvois 原生提交。**管线完成(mock 已测 + 可演示)**;真 sandbox
+  提交(拿 UUID + valid)**阻塞在 LHDN 凭据 + 数字证书**(`action-items` 第 1 条)。
+  规范见 `docs/compliance-einvoice.md`(含 7 个待决缺口 G1–G7)。
+- **下一步:接真 sandbox**(Sean 拿到凭据后)或 **M1.4**(SST 报表 + 期间关账 + 审计留痕)。
 - 仍未做(按 Roadmap 留后):收付款核销(payments)、期间关账 close + 结转分录(M1.4)、
-  真实 Firebase Auth 多租户(目前用 demo org/user 常量)。
+  真实 Firebase Auth 多租户(目前用 demo org/user 常量)、e-Invoice httpTransport + 数字签名。
 - 工作记录见 `docs/diary.md`;待 Sean 处理的事项见 `docs/action-items.md`。

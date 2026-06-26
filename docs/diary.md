@@ -5,6 +5,20 @@
 
 ---
 
+## 2026-06-24 — M1.3 MyInvois e-Invoice(管线 + mock,真 sandbox 待凭据)
+
+Sean 选 M1.3,但真提交卡在 LHDN 凭据 + 数字证书(他还没递交申请)。所以做了不需要真 sandbox 的最大可测切片:
+
+- 先查 LHDN 官方 SDK v1.1(SDK 站 403,转用开源 TS 实现 README)把字段/认证/提交 API 弄准。
+- `docs/compliance-einvoice.md`:v1.1 字段映射(我们 schema → MyInvois)、提交状态机、配置,**列了 7 个待 Sean 拍板的缺口 G1–G7**(supplier 地址/MSIC/phone、B2C TIN、contact 地址结构、行分类码、UOM、税类别码、数字证书)。
+- `packages/core/einvoice/`:payload 构造 + 校验、canonical/sha256/base64、**mock transport**(确定性假 UUID+Valid)、submit 状态机(pending→valid/invalid/rejected)写 `einvoice_submissions`。`666353b`,**28/28(含 5 个 e-invoice 集成测试)**。
+- `54d3986`:API + 前端按上 mock,Invoices 列表加 MyInvois「submit→」+ 状态/UUID 显示,发票行加 classification(G4)输入,supplier profile 从 env 注入。没配凭据自动用 mock。
+- 真 httpTransport + XAdES 签名 + 拿真 UUID/valid 等 Sean 的凭据+证书。
+- 坑:e-invoice 测试 fixture 漏建 AR/SST 系统科目 → issueInvoice 失败,补上。
+- 环境:本 session harness 老把后台进程 SIGTERM 掉,API 活体 smoke 起不住;但 e-invoice 逻辑由 core 集成测试在真 PG 上已证。
+
+---
+
 ## 2026-06-24 — onboarding 加固(Sean 在 PC 上接 Zeabur,卡在部署)
 
 Sean 换到 Windows PC,准备接 Zeabur 真库,到 setup 步骤 C(Zeabur 部署)还没好就先睡。传了两份 Zeabur runtime log(空的,没东西可调)。趁这空档做了不需要真库就能做的 de-risk:

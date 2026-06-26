@@ -4,10 +4,11 @@
 
 ## 🔴 关键路径 / 尽快
 
-1. **MyInvois / Peppol 认证申请**(Roadmap critical path,Phase 0 就该启动)
-   - 这是 LHDN/MDEC 的**外部审批**,有 lead time,不是写代码能解决的。
-   - M1.3(W16)要在 sandbox 跑通 e-Invoice 提交,**没有这个申请会卡死**。
-   - 需要你:以 Sunrise 公司身份递交 MyInvois API / Peppol 接入申请,拿到 sandbox 凭据。
+1. **MyInvois 认证申请 + 数字证书**(Roadmap critical path)— **M1.3 真提交就卡这**
+   - LHDN 外部审批,有 lead time。M1.3 的管线我已写好并用 mock 测通;接真 sandbox 只差:
+     - **client_id / client_secret**(MyInvois portal 注册「ERP 系统」)→ 填 `.env` 的 `MYINVOIS_CLIENT_ID/SECRET` + `MYINVOIS_ENV=sandbox`。
+     - **LHDN 认可的数字证书**(文档签名 XAdES/JAdES 用,缺口 G7)→ 没它 sandbox 也只能「提交」拿不到 Valid。
+   - 拿到后告诉我,我写真 httpTransport(OAuth + submit + poll + 签名),把 mock 换掉跑通 UUID+valid。
 
 2. **Zeabur Postgres 接上真库**(才能脱离本地验证)
    - 在仓库根建 `.env`(参考 `.env.example`),填:
@@ -23,6 +24,12 @@
 3. **决策确认**:`docs/decisions.md` 的 ADR-0001/0002/0003(凭证平衡才落库、trial balance as-at、当期损益计算式)。你之前口头认可,确认就当 Accepted。
 4. **下一里程碑**:确认走 **M1.3**(MyInvois sandbox)还是先补 **payments 收付款核销**(M1.2 我按计划没做,Roadmap 也把它放在更后)。
 5. **是否开 PR / 合并到 main**:目前所有工作在 `claude/connect-finance-phase-1-tfeu5l`,**未开 PR**(按规矩没你指示不自动开)。要合并/开 PR 告诉我。
+
+6. **M1.3 e-Invoice 字段缺口 G1–G7**(详见 `docs/compliance-einvoice.md`)。要紧的几个:
+   - **G1**:org 缺 address / MSIC / phone(MyInvois 必填)。现在从 `MYINVOIS_SUPPLIER_*` env 注入兜底。要不要正式加进 `organizations` 表(改 schema)?
+   - **G4**:每行必填 classification code,前端已加输入框。要不要给个常用码下拉(而非手填)?
+   - **G6**:`tax_codes` 只有 rate,没 MyInvois 税类(01 Sales / 02 Service / 06 NA / E)。SST-6 算 Service(02)还是 Sales(01)?建议给 `tax_codes` 加一列 `myinvois_category`。
+   - **G2**:要不要支持 B2C(个人买家无 TIN,用通用 TIN)?
 
 ## 🟢 之后会需要(还不急)
 
