@@ -16,8 +16,9 @@ interface LineRow {
   unitPrice: string;
   accountId: string;
   taxCodeId: string;
+  classification: string;
 }
-const emptyLine = (): LineRow => ({ description: '', qty: '1', unitPrice: '', accountId: '', taxCodeId: '' });
+const emptyLine = (): LineRow => ({ description: '', qty: '1', unitPrice: '', accountId: '', taxCodeId: '', classification: '' });
 const today = () => new Date().toISOString().slice(0, 10);
 
 function safeParse(s: string, fallback = '0'): Money | null {
@@ -106,6 +107,7 @@ export default function Invoices() {
           unitPrice: l.unitPrice,
           accountId: l.accountId,
           taxCodeId: l.taxCodeId || undefined,
+          classification: l.classification || undefined,
         })),
       });
       setMsg(`Invoice ${res.invoiceNo} ${issue ? 'issued ✓ (posted)' : 'saved as draft'} · grand ${res.grandTotal}`);
@@ -127,6 +129,18 @@ export default function Invoices() {
       reload();
     } catch (e) {
       setError(e instanceof ApiError ? `${e.code}: ${e.message}` : String(e));
+    }
+  }
+
+  // MyInvois submission state per invoice
+  const [einv, setEinv] = useState<Record<string, { status?: string; uuid?: string | null; qr?: string | null; error?: string }>>({});
+  async function submitEinv(id: string) {
+    setEinv((m) => ({ ...m, [id]: { status: '…' } }));
+    try {
+      const r = await api.submitEinvoice(id);
+      setEinv((m) => ({ ...m, [id]: { status: r.status, uuid: r.myinvoisUuid, qr: r.qrUrl } }));
+    } catch (e) {
+      setEinv((m) => ({ ...m, [id]: { error: e instanceof ApiError ? `${e.code}: ${e.message}` : String(e) } }));
     }
   }
 
@@ -169,16 +183,17 @@ export default function Invoices() {
         </div>
 
         <div className="rounded border border-line bg-panel overflow-hidden">
-          <div className="grid grid-cols-[1fr_70px_110px_1fr_120px_28px] gap-px bg-line text-[11px] font-mono uppercase tracking-wide text-slate-500">
+          <div className="grid grid-cols-[1fr_56px_88px_1fr_80px_72px_28px] gap-px bg-line text-[11px] font-mono uppercase tracking-wide text-slate-500">
             <div className="bg-paper px-2 py-2">Description</div>
             <div className="bg-paper px-2 py-2 text-right">Qty</div>
             <div className="bg-paper px-2 py-2 text-right">Unit</div>
             <div className="bg-paper px-2 py-2">Account</div>
             <div className="bg-paper px-2 py-2">Tax</div>
+            <div className="bg-paper px-2 py-2" title="MyInvois classification code (G4)">Class</div>
             <div className="bg-paper" />
           </div>
           {lines.map((l, i) => (
-            <div key={i} className="grid grid-cols-[1fr_70px_110px_1fr_120px_28px] gap-px bg-line">
+            <div key={i} className="grid grid-cols-[1fr_56px_88px_1fr_80px_72px_28px] gap-px bg-line">
               <input value={l.description} onChange={(e) => update(i, { description: e.target.value })} className="bg-panel px-2 py-1.5 text-sm outline-none" />
               <input value={l.qty} onChange={(e) => update(i, { qty: e.target.value })} className="bg-panel px-2 py-1.5 text-sm text-right font-mono outline-none" />
               <input value={l.unitPrice} onChange={(e) => update(i, { unitPrice: e.target.value })} placeholder="0.00" className="bg-panel px-2 py-1.5 text-sm text-right font-mono outline-none" />
@@ -198,6 +213,7 @@ export default function Invoices() {
                   </option>
                 ))}
               </select>
+              <input value={l.classification} onChange={(e) => update(i, { classification: e.target.value })} placeholder="022" title="MyInvois classification code" className="bg-panel px-2 py-1.5 text-sm font-mono outline-none" />
               <button onClick={() => setLines((ls) => (ls.length > 1 ? ls.filter((_, j) => j !== i) : ls))} className="bg-panel text-slate-400 hover:text-debit">
                 ×
               </button>
@@ -240,39 +256,51 @@ export default function Invoices() {
         </h2>
         {error && <p className="font-mono text-sm text-debit">{error}</p>}
         <div className="rounded border border-line bg-panel overflow-hidden">
-          <div className="grid grid-cols-[90px_120px_1fr_110px_110px_90px] gap-px bg-line text-[11px] font-mono uppercase tracking-wide text-slate-500">
+          <div className="grid grid-cols-[80px_90px_1fr_100px_80px_160px] gap-px bg-line text-[11px] font-mono uppercase tracking-wide text-slate-500">
             <div className="bg-paper px-3 py-2">No</div>
-            <div className="bg-paper px-3 py-2">Dir / Party</div>
-            <div className="bg-paper px-3 py-2" />
+            <div className="bg-paper px-3 py-2">Dir</div>
+            <div className="bg-paper px-3 py-2">Party</div>
             <div className="bg-paper px-3 py-2 text-right">Grand</div>
             <div className="bg-paper px-3 py-2">Status</div>
-            <div className="bg-paper px-3 py-2" />
+            <div className="bg-paper px-3 py-2">MyInvois</div>
           </div>
           {invoices.length === 0 && (
             <div className="px-3 py-6 text-center font-mono text-sm text-slate-400">还没有发票。</div>
           )}
-          {invoices.map((inv) => (
-            <div key={inv.id} className="grid grid-cols-[90px_120px_1fr_110px_110px_90px] gap-px bg-line text-sm">
-              <div className="bg-panel px-3 py-1.5 font-mono text-xs">{inv.invoiceNo}</div>
-              <div className="bg-panel px-3 py-1.5 text-xs">
-                <span className={inv.direction === 'sales' ? 'text-credit' : 'text-debit'}>{inv.direction}</span>
+          {invoices.map((inv) => {
+            const e = einv[inv.id];
+            return (
+              <div key={inv.id} className="grid grid-cols-[80px_90px_1fr_100px_80px_160px] gap-px bg-line text-sm">
+                <div className="bg-panel px-3 py-1.5 font-mono text-xs">{inv.invoiceNo}</div>
+                <div className="bg-panel px-3 py-1.5 text-xs">
+                  <span className={inv.direction === 'sales' ? 'text-credit' : 'text-debit'}>{inv.direction}</span>
+                </div>
+                <div className="bg-panel px-3 py-1.5 truncate">{inv.contactName}</div>
+                <div className="bg-panel px-3 py-1.5 text-right font-mono">{inv.grandTotal}</div>
+                <div className="bg-panel px-3 py-1.5">
+                  <span className={`font-mono text-[11px] uppercase ${inv.status === 'issued' ? 'text-credit' : inv.status === 'draft' ? 'text-gold' : 'text-slate-400'}`}>
+                    {inv.status}
+                  </span>
+                </div>
+                <div className="bg-panel px-3 py-1.5 text-xs font-mono">
+                  {inv.status === 'draft' && (
+                    <button onClick={() => issueExisting(inv.id)} className="text-ink hover:underline">issue →</button>
+                  )}
+                  {inv.status === 'issued' && !e && (
+                    <button onClick={() => submitEinv(inv.id)} className="text-ink hover:underline">submit →</button>
+                  )}
+                  {e?.status && e.status !== '…' && (
+                    <span className={e.status === 'valid' ? 'text-credit' : 'text-gold'} title={e.uuid ?? ''}>
+                      {e.status === 'valid' ? '✓ valid' : e.status}
+                      {e.uuid && <span className="text-slate-400"> · {e.uuid.slice(0, 12)}…</span>}
+                    </span>
+                  )}
+                  {e?.status === '…' && <span className="text-slate-400">…</span>}
+                  {e?.error && <span className="text-debit" title={e.error}>✗ {e.error.split(':')[0]}</span>}
+                </div>
               </div>
-              <div className="bg-panel px-3 py-1.5">{inv.contactName}</div>
-              <div className="bg-panel px-3 py-1.5 text-right font-mono">{inv.grandTotal}</div>
-              <div className="bg-panel px-3 py-1.5">
-                <span className={`font-mono text-[11px] uppercase ${inv.status === 'issued' ? 'text-credit' : inv.status === 'draft' ? 'text-gold' : 'text-slate-400'}`}>
-                  {inv.status}
-                </span>
-              </div>
-              <div className="bg-panel px-3 py-1.5 text-right">
-                {inv.status === 'draft' && (
-                  <button onClick={() => issueExisting(inv.id)} className="font-mono text-xs text-ink hover:underline">
-                    issue →
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>

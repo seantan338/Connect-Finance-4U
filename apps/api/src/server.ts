@@ -28,6 +28,10 @@ import {
   createInvoice,
   issueInvoice,
   listInvoices,
+  submitInvoiceToMyInvois,
+  latestSubmissionForInvoice,
+  MockMyInvoisTransport,
+  type SupplierProfile,
   DomainError,
   type ContactKind,
   type InvoiceDirection,
@@ -196,6 +200,42 @@ app.post('/api/invoices', async (c) => {
 app.post('/api/invoices/:id/issue', async (c) => {
   try {
     return c.json(await issueInvoice(db, { invoiceId: c.req.param('id'), userId: USER }));
+  } catch (e) {
+    const { status, body } = fail(e);
+    return c.json(body, status);
+  }
+});
+
+// ── MyInvois e-Invoice ──────────────────────────────────────────────
+// Supplier profile 缺口 G1:从 env 注入(org 暂无 address/MSIC/phone)。
+const SUPPLIER_PROFILE: SupplierProfile = {
+  msicCode: process.env.MYINVOIS_SUPPLIER_MSIC ?? '62010',
+  phone: process.env.MYINVOIS_SUPPLIER_PHONE ?? '+60123456789',
+  email: process.env.MYINVOIS_SUPPLIER_EMAIL,
+  address: {
+    lines: [process.env.MYINVOIS_SUPPLIER_ADDR ?? 'Demo address, JB'],
+    city: process.env.MYINVOIS_SUPPLIER_CITY ?? 'Johor Bahru',
+    postcode: process.env.MYINVOIS_SUPPLIER_POSTCODE ?? '80000',
+    state: process.env.MYINVOIS_SUPPLIER_STATE ?? '01',
+    countryCode: 'MYS',
+  },
+};
+// 没配 sandbox 凭据 → mock。真 httpTransport 等凭据+证书(G7)接上后在此切换。
+const einvoiceTransport = new MockMyInvoisTransport();
+
+app.get('/api/invoices/:id/einvoice', async (c) => {
+  const sub = await latestSubmissionForInvoice(db, c.req.param('id'));
+  return c.json(sub);
+});
+
+app.post('/api/invoices/:id/einvoice', async (c) => {
+  try {
+    const res = await submitInvoiceToMyInvois(db, {
+      invoiceId: c.req.param('id'),
+      supplierProfile: SUPPLIER_PROFILE,
+      transport: einvoiceTransport,
+    });
+    return c.json({ ...res, transport: einvoiceTransport.name }, 201);
   } catch (e) {
     const { status, body } = fail(e);
     return c.json(body, status);

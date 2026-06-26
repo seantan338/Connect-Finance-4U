@@ -77,6 +77,15 @@ export interface InvoiceLineInput {
   unitPrice: string;
   accountId: string;
   taxCodeId?: string;
+  classification?: string;
+}
+
+export interface EinvoiceSubmission {
+  id: string;
+  invoiceId: string;
+  status: string;
+  myinvoisUuid: string | null;
+  qrUrl: string | null;
 }
 
 export interface StatementRow {
@@ -173,6 +182,12 @@ export const api = {
     ),
   issueInvoice: (id: string) =>
     req<{ journalEntryId: string; entryNo: number }>(`/api/invoices/${id}/issue`, { method: 'POST' }),
+  submitEinvoice: (id: string) =>
+    req<{ submissionId: string; status: string; myinvoisUuid: string | null; qrUrl: string | null; transport: string }>(
+      `/api/invoices/${id}/einvoice`,
+      { method: 'POST' },
+    ),
+  getEinvoice: (id: string) => req<EinvoiceSubmission | null>(`/api/invoices/${id}/einvoice`),
   profitAndLoss: (periodId: string) =>
     req<ProfitAndLoss>(`/api/profit-and-loss?periodId=${encodeURIComponent(periodId)}`),
   balanceSheet: (periodId: string) =>
