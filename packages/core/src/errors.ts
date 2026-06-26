@@ -92,3 +92,31 @@ export class InvalidInvoiceStateError extends DomainError {
     super(`invoice is ${status}, expected draft`, 'INVALID_INVOICE_STATE');
   }
 }
+
+/** e-Invoice 只能提交已 issued 的发票。 */
+export class NotIssuedError extends DomainError {
+  constructor(public readonly status: string) {
+    super(`invoice is ${status}, must be issued before e-Invoice submission`, 'NOT_ISSUED');
+  }
+}
+
+/** 该发票不该由我们提交(如普通采购发票应由供应商提交,非 self-billed)。 */
+export class NotSubmittableError extends DomainError {
+  constructor(message: string) {
+    super(message, 'NOT_SUBMITTABLE');
+  }
+}
+
+/** 已有 pending/valid 的提交,不重复提交。 */
+export class AlreadySubmittedError extends DomainError {
+  constructor(public readonly status: string) {
+    super(`invoice already has a ${status} e-Invoice submission`, 'ALREADY_SUBMITTED');
+  }
+}
+
+/** MyInvois 文档必填字段缺失(提交前应用层校验)。 */
+export class EinvoiceValidationError extends DomainError {
+  constructor(public readonly missing: string[]) {
+    super(`e-Invoice document missing required fields: ${missing.join(', ')}`, 'EINVOICE_VALIDATION');
+  }
+}

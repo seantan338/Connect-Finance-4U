@@ -9,3 +9,4 @@ export * from './reports.js';
 export * from './contacts.js';
 export * from './taxCodes.js';
 export * from './invoice.js';
+export * from './einvoice/index.js';

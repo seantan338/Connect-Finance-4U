@@ -11,6 +11,7 @@ import {
   auditLog,
   contacts,
   currencies,
+  einvoiceSubmissions,
   fiscalPeriods,
   invoices,
   journalEntries,
@@ -85,6 +86,7 @@ export async function setupFixture(): Promise<Fixture> {
 
 export async function teardownFixture(f: Fixture): Promise<void> {
   const { db, orgId, userId } = f;
+  await db.delete(einvoiceSubmissions).where(eq(einvoiceSubmissions.orgId, orgId)); // FK to invoices
   await db.delete(invoices).where(eq(invoices.orgId, orgId)); // cascades invoice_lines; FK to JE
   await db.delete(journalEntries).where(eq(journalEntries.orgId, orgId)); // cascades lines
   await db.delete(accounts).where(eq(accounts.orgId, orgId));
